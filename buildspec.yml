@@ -1,13 +1,18 @@
 version: 0.2
-
 phases:
   pre_build:
     commands:
+      - echo Getting credentials...
+      - echo "AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID"
+      - echo "AWS_REGION=$AWS_REGION"
+      - export REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME
+      - echo "REPOSITORY_URI=$REPOSITORY_URI"
+      - export COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - echo "COMMIT_HASH=$COMMIT_HASH"
+      - export IMAGE_TAG=${COMMIT_HASH:=latest}
+      - echo "IMAGE_TAG=$IMAGE_TAG"
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-      - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/news/news-reader
-      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
   
   build:
     commands:
@@ -20,13 +25,25 @@ phases:
   post_build:
     commands:
       - echo Build completed on `date`
+      - echo "REPOSITORY_URI=$REPOSITORY_URI"
+      - echo "IMAGE_TAG=$IMAGE_TAG"
+      - echo "Current working directory:"
+      - pwd
       - echo Pushing the Docker image to ECR...
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - docker push $REPOSITORY_URI:latest
       - echo Writing image definitions file...
-      - printf '[{"name":"news-reader","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - printf '[{"name":"spring-ws","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - echo "Image definitions file created:"
       - cat imagedefinitions.json
+      - echo Writing image detail file for CodeDeploy Blue/Green...
+      - printf '{"ImageURI":"%s"}' $REPOSITORY_URI:$IMAGE_TAG > imageDetail.json
+      - echo "Image detail file created:"
+      - cat imageDetail.json
 
 artifacts:
   files:
     - imagedefinitions.json
+    - imageDetail.json
+    - appspec.yml
+  name: BuildArtifact

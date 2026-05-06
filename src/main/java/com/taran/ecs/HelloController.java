@@ -15,4 +15,11 @@ public class HelloController {
 		response.put("message", "Hello from Deployment!");
 		return response;
 	}
+	@GetMapping("/welcome")
+	public Map<String, String> welcome() {
+		Map<String, String> response = new HashMap<>();
+		response.put("message", "welcome to the api again!");
+		response.put("status", "success");
+		return response;
+	}
 }

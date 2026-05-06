@@ -1,0 +1,19 @@
+version: 0.0
+Resources:
+  - TargetService:
+      Type: AWS::ECS::Service
+      Properties:
+        TaskDefinition: <TASK_DEFINITION>
+        LoadBalancerInfo:
+          ContainerName: spring-ws
+          ContainerPort: 8080
+        NetworkConfiguration:
+          AwsvpcConfiguration:
+            AssignPublicIp: DISABLED
+            Subnets:
+              - # SUBNET_ID_1
+              - # SUBNET_ID_2
+              - # SUBNET_ID_3
+              - # SUBNET_ID_4
+            SecurityGroups:
+              - # SECURITY_GROUP_ID
